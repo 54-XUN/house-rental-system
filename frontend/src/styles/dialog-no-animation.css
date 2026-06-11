@@ -1,0 +1,40 @@
+/* 全局禁用Element Plus对话框动画 */
+.el-dialog {
+  animation: none !important;
+  transition: none !important;
+}
+
+.el-overlay {
+  animation: none !important;
+  transition: none !important;
+}
+
+.el-overlay-dialog {
+  animation: none !important;
+  transition: none !important;
+}
+
+.el-overlay-dialog__wrapper {
+  animation: none !important;
+  transition: none !important;
+}
+
+.el-dialog__wrapper {
+  animation: none !important;
+  transition: none !important;
+}
+
+.el-dialog__body {
+  animation: none !important;
+  transition: none !important;
+}
+
+/* 禁用所有transform动画 */
+.el-dialog,
+.el-overlay,
+.el-overlay-dialog,
+.el-overlay-dialog__wrapper,
+.el-dialog__wrapper {
+  transform: none !important;
+  opacity: 1 !important;
+}
