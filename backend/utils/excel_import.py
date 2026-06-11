@@ -101,7 +101,7 @@ def 解析面积(面积值) -> float | None:
         if not 面积字符串:
             return None
             
-        return float(面積字符串)
+        return float(面积字符串)
         
     except (ValueError, TypeError) as e:
         logger.warning(f"面积解析失败: {面积值}, 错误: {e}")

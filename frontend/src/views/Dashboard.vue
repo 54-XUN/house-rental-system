@@ -227,31 +227,31 @@ async function 加载所有数据() {
     ])
 
     if (summary.status === 'fulfilled') {
-      汇总数据.value = summary.value || {}
+      汇总数据.value = (summary.value?.data || summary.value) || {}
     }
 
     if (amountTrend.status === 'fulfilled') {
-      金额趋势数据.value = Array.isArray(amountTrend.value) ? amountTrend.value : []
+      金额趋势数据.value = Array.isArray(amountTrend.value?.data || amountTrend.value) ? (amountTrend.value?.data || amountTrend.value) : []
     }
 
     if (customerTrend.status === 'fulfilled') {
-      客户趋势数据.value = Array.isArray(customerTrend.value) ? customerTrend.value : []
+      客户趋势数据.value = Array.isArray(customerTrend.value?.data || customerTrend.value) ? (customerTrend.value?.data || customerTrend.value) : []
     }
 
     if (houseStatus.status === 'fulfilled') {
-      房源状态数据.value = houseStatus.value || {}
+      房源状态数据.value = (houseStatus.value?.data || houseStatus.value) || {}
     }
 
     if (topCommunities.status === 'fulfilled') {
-      小区排名数据.value = Array.isArray(topCommunities.value) ? topCommunities.value : []
+      小区排名数据.value = Array.isArray(topCommunities.value?.data || topCommunities.value) ? (topCommunities.value?.data || topCommunities.value) : []
     }
 
     if (bestDay.status === 'fulfilled') {
-      最高成交日.value = bestDay.value || {}
+      最高成交日.value = (bestDay.value?.data || bestDay.value) || {}
     }
 
     if (bestMonth.status === 'fulfilled') {
-      最高客户月.value = bestMonth.value || {}
+      最高客户月.value = (bestMonth.value?.data || bestMonth.value) || {}
     }
   } catch (error) {
     console.error('加载看板数据失败:', error)

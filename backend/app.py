@@ -1,6 +1,7 @@
-from flask import Flask, send_from_directory, jsonify
+from flask import Flask, send_from_directory, jsonify, request
 from flask_cors import CORS
 import os
+import secrets
 from config import SQLALCHEMY_DATABASE_URI, SQLALCHEMY_TRACK_MODIFICATIONS
 from models import db
 from routes.houses import houses_bp
@@ -9,10 +10,17 @@ from routes.contracts import contracts_bp
 from routes.dashboard import dashboard_bp
 from routes.settings import settings_bp
 
+# API访问令牌（启动时随机生成，防止外部未授权调用写接口）
+_API令牌 = secrets.token_urlsafe(32)
+
+
+def 获取API令牌() -> str:
+    """获取当前API访问令牌（供前端读取后附加到请求头）"""
+    return _API令牌
+
 
 def 获取前端dist目录():
     """获取前端构建产物目录路径"""
-    import os
     if getattr(__import__('sys'), 'frozen', False):
         # 打包模式：exe所在目录/frontend/dist
         基础目录 = os.path.dirname(__import__('sys').executable)
@@ -30,6 +38,16 @@ def 创建应用():
     CORS(app)
 
     db.init_app(app)
+
+    # 写操作令牌校验中间件（仅对POST/PUT/DELETE生效，GET和静态文件不受影响）
+    @app.before_request
+    def 校验写操作令牌():
+        if request.method in ('POST', 'PUT', 'DELETE'):
+            # 静态文件跳过、健康检查跳过
+            if request.path.startswith('/api/'):
+                客户端令牌 = request.headers.get('X-API-Token')
+                if 客户端令牌 != _API令牌:
+                    return jsonify({'code': 401, 'data': None, 'msg': '未授权访问'}), 401
 
     with app.app_context(): 
         db.create_all()
@@ -49,6 +67,11 @@ def 创建应用():
         except Exception as e:
             return jsonify({'status': 'unhealthy', 'error': str(e)}), 500
 
+    @app.route('/api/token', methods=['GET'])
+    def 获取令牌接口():
+        """前端启动时获取API访问令牌，后续写操作需携带此令牌"""
+        return jsonify({'token': _API令牌})
+
     # 添加前端静态文件托管路由（用于打包后的单文件部署）
     @app.route('/', defaults={'path': ''})
     @app.route('/<path:path>')
@@ -62,18 +85,8 @@ def 创建应用():
 
 
 def 初始化默认设置():
-    from models.setting import 设置模型
-    默认设置 = {
-        'card_columns': '5',
-        'vacant_style': 'WPS',
-        'rented_style': 'WPS',
-        'expiring_style': 'WPS',
-        'expiring_days': '30',
-        'communities': '["小区名称A","小区名称B","小区名称C","小区名称D","小区名称E","小区名称F","小区名称G","小区名称H","小区名称I"]',
-        'house_tags': '["楼层低","有电梯","近地铁","有家具","有空调","有车位","精装修","民水民电","随时看房"]'
-    }
-    
-    for 键, 值 in 默认设置.items():
+    from models.setting import 设置模型, 获取默认设置
+    for 键, 值 in 获取默认设置().items():
         if not 设置模型.query.filter_by(key=键).first():
             设置项 = 设置模型(key=键, value=值)
             db.session.add(设置项)

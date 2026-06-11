@@ -204,7 +204,20 @@ async function 模板初始化() {
         type: 'warning'
       }
     )
-    await 重置系统()
+
+    // 二次确认：输入管理密码
+    const { value: 密码 } = await ElMessageBox.prompt(
+      '请输入管理密码以确认重置（首次使用或未设置密码可直接确定）',
+      '安全验证',
+      {
+        confirmButtonText: '确定重置',
+        cancelButtonText: '取消',
+        inputType: 'password',
+        inputPlaceholder: '请输入管理密码'
+      }
+    )
+
+    await 重置系统(密码 || '')
     ElMessage.success('系统已重置')
     await 加载设置()
   } catch (error) {

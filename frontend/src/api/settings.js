@@ -8,8 +8,8 @@ export const 更新设置 = (data) => {
   return request.put('/settings', data)
 }
 
-export const 重置系统 = () => {
-  return request.post('/settings/reset')
+export const 重置系统 = (confirmPassword) => {
+  return request.post('/settings/reset', { confirm_password: confirmPassword })
 }
 
 export const 导入示例数据 = () => {

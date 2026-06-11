@@ -207,13 +207,14 @@ async function 加载房源列表(页码 = 1) {
   loading.value = true
   try {
     const res = await 获取房源列表({ page: 页码, per_page: 每页条数.value })
-    if (res && res.items) {
-      房源列表.value = res.items
-      总记录数.value = res.total || 0
-      当前页码.value = res.current_page || 页码
+    const data = res.data || res  // 兼容拦截器返回格式
+    if (data && data.items) {
+      房源列表.value = data.items
+      总记录数.value = data.total || 0
+      当前页码.value = data.current_page || 页码
     } else {
-      房源列表.value = Array.isArray(res) ? res : []
-      总记录数.value = Array.isArray(res) ? res.length : 0
+      房源列表.value = Array.isArray(data) ? data : []
+      总记录数.value = Array.isArray(data) ? data.length : 0
       当前页码.value = 1
     }
   } catch (error) {
@@ -335,6 +336,7 @@ function 获取状态类型(status) {
 .main-content {
   padding: 20px;
   overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .toolbar {
@@ -423,6 +425,11 @@ function 获取状态类型(status) {
   transform: scale(0.85);
   transform-origin: top left;
   width: 117.6%; /* 100 / 0.85 ≈ 117.6% */
+}
+
+/* 隐藏页面级水平滚动条（scale缩放产生），保留表格内部滚动条 */
+.house-detail {
+  overflow-x: hidden;
 }
 
 :deep(.el-table) {

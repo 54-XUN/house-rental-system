@@ -82,10 +82,11 @@ onMounted(() => {
 async function 加载设置() {
   try {
     const res = await 获取设置()
-    if (res.house_tags) {
-      可用标签列表.value = typeof res.house_tags === 'string'
-        ? JSON.parse(res.house_tags)
-        : res.house_tags
+    const data = res.data || res  // 兼容拦截器返回格式
+    if (data.house_tags) {
+      可用标签列表.value = typeof data.house_tags === 'string'
+        ? JSON.parse(data.house_tags)
+        : data.house_tags
     }
   } catch (error) {
     console.error('加载设置失败:', error)
@@ -99,13 +100,14 @@ async function 加载客户列表(页码 = 1) {
       ? { status: 当前筛选状态.value, page: 页码, per_page: 每页条数.value }
       : { page: 页码, per_page: 每页条数.value }
     const res = await 获取客户列表(params)
-    if (res && res.items) {
-      客户列表.value = res.items
-      总记录数.value = res.total || 0
-      当前页码.value = res.current_page || 页码
+    const data = res.data || res  // 兼容拦截器返回格式
+    if (data && data.items) {
+      客户列表.value = data.items
+      总记录数.value = data.total || 0
+      当前页码.value = data.current_page || 页码
     } else {
-      客户列表.value = Array.isArray(res) ? res : []
-      总记录数.value = Array.isArray(res) ? res.length : 0
+      客户列表.value = Array.isArray(data) ? data : []
+      总记录数.value = Array.isArray(data) ? data.length : 0
       当前页码.value = 1
     }
   } catch (error) {

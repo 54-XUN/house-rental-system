@@ -6,6 +6,7 @@ import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 import zhCn from 'element-plus/dist/locale/zh-cn.mjs'
 import App from './App.vue'
 import router from './router'
+import { 初始化令牌 } from './utils/request'
 
 const app = createApp(App)
 
@@ -18,3 +19,6 @@ app.use(ElementPlus, {
 })
 app.use(router)
 app.mount('#app')
+
+// 启动时获取API访问令牌
+初始化令牌()

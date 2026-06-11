@@ -55,7 +55,7 @@ with app.app_context():
     # 30个客户
     for i in range(1, 31):
         姓名 = f'{random.choice(姓氏)}{random.choice(名字)}{random.choice(名字)}'
-        身份证 = str(random.randint(110101199001010000, 110101200512319999))
+        身份证 = f'TEST{random.randint(1000000000000, 9999999999999)}'  # 测试数据标识，不碰撞真实号码
         电话前缀 = random.choice([3, 5, 7, 8, 9])
         电话后缀 = ''.join([str(random.randint(0, 9)) for _ in range(9)])
         电话 = f'1{电话前缀}{电话后缀}'

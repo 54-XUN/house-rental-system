@@ -1,15 +1,17 @@
 from flask import Blueprint, request, jsonify, Response
 from models import db
-from models.setting import 设置模型
+from models.setting import 设置模型, 获取默认设置
 from models.house import 房源模型
 from models.customer import 客户模型
 from models.contract import 合同模型
-from utils.helpers import 构建响应
+from utils.helpers import 构建响应, 构建错误响应
+from utils.api_decorator import api_handler
 
 settings_bp = Blueprint('settings', __name__)
 
 
 @settings_bp.route('/settings', methods=['GET'])
+@api_handler("获取设置", 需要回滚=False)
 def 获取设置() -> Response:
     """获取所有参数设置"""
     设置列表 = 设置模型.query.all()
@@ -18,10 +20,11 @@ def 获取设置() -> Response:
 
 
 @settings_bp.route('/settings', methods=['PUT'])
+@api_handler("更新设置", 需要回滚=True)
 def 更新设置() -> Response:
     """更新参数设置"""
     数据 = request.get_json()
-    
+
     for 键, 值 in 数据.items():
         设置项 = 设置模型.query.filter_by(key=键).first()
         if 设置项:
@@ -29,58 +32,66 @@ def 更新设置() -> Response:
         else:
             新设置 = 设置模型(key=键, value=str(值))
             db.session.add(新设置)
-    
+
     db.session.commit()
     return jsonify(构建响应(200, None, "更新成功"))
 
 
 @settings_bp.route('/settings/reset', methods=['POST'])
+@api_handler("重置系统", 需要回滚=True)
 def 重置系统() -> Response:
     """
-    模板初始化：
+    系统重置（需二次确认密码）：
     清空三张表（房源、客户、合同）
     恢复 settings 默认值
+
+    请求体: { "confirm_password": "管理密码" }
+    - 若 admin_password 为空（首次使用）→ 直接允许
+    - 若已设置密码 → 必须匹配才允许重置
     """
-    try:
-        # 清空三张表（先清合同表，避免外键问题）
-        db.session.query(合同模型).delete()
-        db.session.query(房源模型).delete()
-        db.session.query(客户模型).delete()
-        
-        # 删除现有设置
-        db.session.query(设置模型).delete()
-        db.session.commit()
-        
-        # 恢复默认设置
-        默认设置 = {
-            'card_columns': '5',
-            'vacant_style': 'WPS',
-            'rented_style': 'WPS',
-            'expiring_style': 'WPS',
-            'expiring_days': '30',
-            'communities': '["小区名称A","小区名称B","小区名称C","小区名称D","小区名称E","小区名称F","小区名称G","小区名称H","小区名称I"]',
-            'house_tags': '["楼层低","有电梯","近地铁","有家具","有空调","有车位","精装修","民水民电","随时看房"]'
-        }
-        
-        for 键, 值 in 默认设置.items():
-            设置项 = 设置模型(key=键, value=值)
-            db.session.add(设置项)
-        
-        db.session.commit()
-        
-        return jsonify(构建响应(200, None, "系统已重置"))
-    
-    except Exception as e:
-        db.session.rollback()
-        return jsonify(构建响应(500, None, f"重置失败：{str(e)}"))
+    数据 = request.get_json()
+
+    # 校验管理密码
+    密码设置项 = 设置模型.query.filter_by(key='admin_password').first()
+    当前密码 = 密码设置项.value if 密码设置项 and 密码设置项.value else ''
+
+    if 当前密码:
+        用户输入密码 = (数据 or {}).get('confirm_password', '')
+        if 用户输入密码 != 当前密码:
+            return jsonify(构建响应(403, None, "管理密码不正确，无法重置"))
+
+    # 清空三张表（先清合同表，避免外键问题）
+    db.session.query(合同模型).delete()
+    db.session.query(房源模型).delete()
+    db.session.query(客户模型).delete()
+
+    # 删除现有设置
+    db.session.query(设置模型).delete()
+    db.session.commit()
+
+    # 恢复默认设置（使用模型层统一定义，保留用户设置的管理密码）
+    for 键, 值 in 获取默认设置().items():
+        设置项 = 设置模型(key=键, value=值)
+        db.session.add(设置项)
+
+    # 如果之前设置了管理密码，恢复它
+    if 当前密码:
+        密码恢复项 = 设置模型.query.filter_by(key='admin_password').first()
+        if 密码恢复项:
+            密码恢复项.value = 当前密码
+
+    db.session.commit()
+
+    return jsonify(构建响应(200, None, "系统已重置"))
 
 
 @settings_bp.route('/import-example', methods=['POST'])
+@api_handler("导入示例数据", 需要回滚=True)
 def 导入示例数据接口() -> Response:
     """导入示例数据接口"""
     from utils.excel_import import 导入示例数据
     成功, 消息 = 导入示例数据()
-    
+
     if 成功:
         return jsonify(构建响应(200, None, 消息))
     else:
@@ -88,11 +99,12 @@ def 导入示例数据接口() -> Response:
 
 
 @settings_bp.route('/delete-test-data', methods=['POST'])
+@api_handler("删除测试数据", 需要回滚=True)
 def 删除测试数据接口() -> Response:
     """删除测试数据接口"""
     from utils.excel_import import 删除测试数据
     成功, 消息 = 删除测试数据()
-    
+
     if 成功:
         return jsonify(构建响应(200, None, 消息))
     else:

@@ -208,18 +208,19 @@ function 响应式布局监听() {
 async function 加载设置() {
   try {
     const res = await 获取设置()
-    if (res.communities) {
-      小区列表.value = typeof res.communities === 'string' 
-        ? JSON.parse(res.communities) 
-        : res.communities
+    const data = res.data || res  // 兼容拦截器返回格式
+    if (data.communities) {
+      小区列表.value = typeof data.communities === 'string'
+        ? JSON.parse(data.communities)
+        : data.communities
     }
-    if (res.house_tags) {
-      可用标签列表.value = typeof res.house_tags === 'string' 
-        ? JSON.parse(res.house_tags) 
-        : res.house_tags
+    if (data.house_tags) {
+      可用标签列表.value = typeof data.house_tags === 'string'
+        ? JSON.parse(data.house_tags)
+        : data.house_tags
     }
-    if (res.card_columns) {
-      卡片列数.value = res.card_columns
+    if (data.card_columns) {
+      卡片列数.value = data.card_columns
     }
   } catch (error) {
     console.error('加载设置失败:', error)
@@ -233,11 +234,12 @@ async function 加载房源列表(params = {}) {
     const 默认参数 = { per_page: 500, status_exclude: '已租' }
     const 合并参数 = { ...默认参数, ...params }
     const res = await 获取房源列表(合并参数)
-    房源列表.value = Array.isArray(res) ? res : (res.items || [])
+    const data = res.data || res  // 兼容拦截器返回格式
+    房源列表.value = Array.isArray(data) ? data : (data.items || [])
     按小区分组()
 
-    if (Object.keys(params).length > 0 && res.total !== undefined) {
-      ElMessage.success(`找到 ${res.total} 条符合条件的房源`)
+    if (Object.keys(params).length > 0 && data.total !== undefined) {
+      ElMessage.success(`找到 ${data.total} 条符合条件的房源`)
     }
   } catch (error) {
     console.error('加载房源失败:', error)
