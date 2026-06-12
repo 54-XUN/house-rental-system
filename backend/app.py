@@ -21,9 +21,10 @@ def 获取API令牌() -> str:
 
 def 获取前端dist目录():
     """获取前端构建产物目录路径"""
-    if getattr(__import__('sys'), 'frozen', False):
-        # 打包模式：exe所在目录/frontend/dist
-        基础目录 = os.path.dirname(__import__('sys').executable)
+    import sys as _sys
+    if getattr(_sys, 'frozen', False):
+        # 打包模式：PyInstaller 解压临时目录（--onefile 模式数据在这里）
+        基础目录 = getattr(_sys, '_MEIPASS', os.path.dirname(_sys.executable))
     else:
         # 开发模式：项目根目录/frontend/dist
         基础目录 = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -95,5 +96,18 @@ def 初始化默认设置():
 
 
 if __name__ == '__main__':
+    import sys, os
+
+    # PyInstaller 打包后无窗口模式下标准输出不可用，需要重定向
+    if getattr(sys, 'frozen', False):
+        if hasattr(sys.stdout, 'buffer'):
+            import io
+            sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+            sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
+        else:
+            # --windowed 模式下 stdout 为 None，重定向到空设备
+            sys.stdout = open(os.devnull, 'w')
+            sys.stderr = open(os.devnull, 'w')
+
     app = 创建应用()
-    app.run(debug=True, port=5000)
+    app.run(port=5000)

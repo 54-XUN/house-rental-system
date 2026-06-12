@@ -25,7 +25,12 @@ def 获取房源列表() -> Response:
 
     排除状态 = request.args.get('status_exclude')
     if 排除状态:
-        查询 = 查询.filter(房源模型.status != 排除状态)
+        # 支持逗号分隔的多状态排除，如 "已租,即将到期"
+        排除列表 = [s.strip() for s in 排除状态.split(',') if s.strip()]
+        if len(排除列表) == 1:
+            查询 = 查询.filter(房源模型.status != 排除列表[0])
+        elif len(排除列表) > 1:
+            查询 = 查询.filter(房源模型.status.notin_(排除列表))
 
     面积最小值 = request.args.get('area_min')
     if 面积最小值:
@@ -81,7 +86,19 @@ def 创建房源() -> Response:
     if not 数据:
         return jsonify(构建响应(400, None, "请求数据为空"))
 
-    if 数据.get('area') and (数据['area'] < 0 or 数据['area'] > 9999):
+    # 前端el-input全部传字符串，统一转为数值类型
+    def 取数值(字段名, 转换函数=float, 默认值=None):
+        """安全提取并转换数值字段"""
+        原始值 = 数据.get(字段名)
+        if 原始值 is None or 原始值 == '':
+            return 默认值
+        try:
+            return 转换函数(原始值)
+        except (ValueError, TypeError):
+            return 默认值
+
+    面积值 = 取数值('area')
+    if 面积值 is not None and (面积值 < 0 or 面积值 > 9999):
         return jsonify(构建响应(400, None, "面积必须在0-9999之间"))
 
     新房源 = 房源模型(
@@ -89,11 +106,11 @@ def 创建房源() -> Response:
         add_date=数据.get('add_date'),
         community=数据.get('community'),
         address=数据.get('address'),
-        floor=数据.get('floor'),
-        room=数据.get('room'),
-        hall=数据.get('hall'),
-        area=数据.get('area'),
-        rent=数据.get('rent'),
+        floor=取数值('floor', int),
+        room=取数值('room', int),
+        hall=取数值('hall', int),
+        area=面积值,
+        rent=取数值('rent'),
         tags=数据.get('tags'),
         status='空闲'
     )

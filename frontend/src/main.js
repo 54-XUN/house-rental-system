@@ -18,7 +18,9 @@ app.use(ElementPlus, {
   locale: zhCn
 })
 app.use(router)
-app.mount('#app')
 
-// 启动时获取API访问令牌
-初始化令牌()
+// 先获取API访问令牌，再挂载应用（避免写操作401）
+;(async function 启动() {
+  await 初始化令牌()
+  app.mount('#app')
+})()

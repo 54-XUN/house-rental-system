@@ -33,7 +33,7 @@
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column prop="status" label="状态" width="100" align="center">
+      <el-table-column prop="status" label="状态" width="100" align="center" fixed="right">
         <template #default="{ row }">
           <el-tag :type="获取状态类型(row.status)" size="small">
             {{ row.status }}

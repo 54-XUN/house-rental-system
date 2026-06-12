@@ -3,6 +3,7 @@ import re
 from models import db
 from models.contract import 合同模型
 from models.house import 房源模型
+from models.customer import 客户模型
 from utils.id_generator import 生成合同编号
 from utils.helpers import 构建响应, 构建错误响应, 计算房源状态
 from utils.api_decorator import api_handler
@@ -94,14 +95,55 @@ def 创建合同() -> Response:
 
     db.session.add(新合同)
 
-    # 更新房源状态和关联信息
+    # 更新房源状态和关联信息（新签约统一设为"已租"，"即将到期"由定时刷新计算）
     关联房源.contract_code = 新合同.contract_code
     关联房源.expire_date = 数据['end_date']
-    关联房源.status = 计算房源状态(数据['end_date'])
+    关联房源.status = '已租'
 
     db.session.commit()
 
+    # 同步更新关联客户状态为"已签单"
+    关联客户 = 客户模型.query.filter_by(customer_code=数据['customer_code']).first()
+    if 关联客户:
+        关联客户.status = '已签单'
+        db.session.commit()
+
     return jsonify(构建响应(200, 新合同.to_dict(), "创建成功"))
+
+
+@contracts_bp.route('/contracts/<int:contract_id>', methods=['PUT'])
+@api_handler("更新合同", 需要回滚=True)
+def 更新合同(contract_id: int) -> Response:
+    """更新合同信息"""
+    合同 = 合同模型.query.get_or_404(contract_id)
+    数据 = request.get_json()
+
+    if not 数据:
+        return jsonify(构建响应(400, None, "请求数据为空"))
+
+    可更新字段 = ['sign_date', 'months', 'start_date', 'end_date',
+                   'deposit', 'monthly_rent', 'customer_code']
+
+    for 字段 in 可更新字段:
+        if 字段 in 数据:
+            setattr(合同, 字段, 数据[字段])
+
+    # 重新计算总金额
+    if 'months' in 数据 or 'monthly_rent' in 数据 or 'deposit' in 数据:
+        月数 = 合同.months or 0
+        月租 = 合同.monthly_rent or 0
+        押金 = 合同.deposit or 0
+        合同.total_amount = 月数 * 月租 + 押金
+
+    # 如果结束日期变更，同步更新房源到期日和状态
+    if 'end_date' in 数据 and 合同.house_code:
+        关联房源 = 房源模型.query.filter_by(house_code=合同.house_code).first()
+        if 关联房源:
+            关联房源.expire_date = 数据['end_date']
+            关联房源.status = 计算房源状态(数据['end_date'])
+
+    db.session.commit()
+    return jsonify(构建响应(200, 合同.to_dict(), "更新成功"))
 
 
 @contracts_bp.route('/contracts/<int:contract_id>', methods=['DELETE'])
@@ -121,7 +163,24 @@ def 删除合同(contract_id: int) -> Response:
             关联房源.expire_date = None
             关联房源.status = '空闲'
 
+    # 记录客户编号，用于删除后更新客户状态
+    客户编号 = 合同.customer_code
+
     db.session.delete(合同)
     db.session.commit()
+
+    # 检查该客户是否还有其他合同，没有则回退状态为"跟进中"
+    if 客户编号:
+        剩余合同数 = 合同模型.query.filter(
+            合同模型.customer_code == 客户编号,
+            合同模型.id != contract_id
+        ).count()
+        关联客户 = 客户模型.query.filter_by(customer_code=客户编号).first()
+        if 关联客户:
+            if 剩余合同数 == 0:
+                关联客户.status = '跟进中'
+            else:
+                关联客户.status = '已签单'
+            db.session.commit()
 
     return jsonify(构建响应(200, None, "删除成功"))

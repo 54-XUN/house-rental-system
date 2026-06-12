@@ -54,13 +54,14 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { ElMessage } from 'element-plus'
 
 import CustomerTable from '../components/CustomerTable.vue'
 import CustomerForm from '../components/CustomerForm.vue'
 import { 获取客户列表, 添加客户, 更新客户, 删除客户 } from '../api/customer.js'
 import { 获取设置 } from '../api/house.js'
+import eventBus from '../utils/event-bus.js'
 
 const loading = ref(false)
 const 客户列表 = ref([])
@@ -77,7 +78,19 @@ const 每页条数 = ref(20)
 onMounted(() => {
   加载设置()
   加载客户列表()
+  // 监听合同变更事件，自动刷新客户列表以同步状态
+  eventBus.on('data-changed', 处理数据变更)
 })
+
+onUnmounted(() => {
+  eventBus.off('data-changed', 处理数据变更)
+})
+
+function 处理数据变更(事件数据) {
+  if (['contract-created', 'contract-deleted', 'contract-updated'].includes(事件数据?.type)) {
+    加载客户列表(当前页码.value)
+  }
+}
 
 async function 加载设置() {
   try {

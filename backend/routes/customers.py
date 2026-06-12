@@ -46,11 +46,13 @@ def 创建客户() -> Response:
     if not 数据:
         return jsonify(构建响应(400, None, "请求数据为空"))
 
-    # 敏感字段格式校验
-    if 数据.get('phone') and not _手机号正则.match(数据['phone']):
-        return jsonify(构建响应(400, None, "手机号格式不正确"))
-    if 数据.get('id_card') and not _身份证正则.match(数据['id_card']):
-        return jsonify(构建响应(400, None, "身份证号格式不正确"))
+    # 敏感字段格式校验（仅非空时校验）
+    手机号 = 数据.get('phone')
+    if 手机号 and 手机号.strip() and not _手机号正则.match(手机号.strip()):
+        return jsonify(构建响应(400, None, "手机号格式不正确（需11位数字，1开头）"))
+    身份证号 = 数据.get('id_card')
+    if 身份证号 and 身份证号.strip() and not _身份证正则.match(身份证号.strip()):
+        return jsonify(构建响应(400, None, "身份证号格式不正确（需18位）"))
 
     新客户 = 客户模型(
         customer_code=生成客户编号(),
@@ -79,11 +81,15 @@ def 更新客户(customer_id: int) -> Response:
     if not 数据:
         return jsonify(构建响应(400, None, "请求数据为空"))
 
-    # 更新时也校验敏感字段格式
-    if 'phone' in 数据 and 数据['phone'] and not _手机号正则.match(数据['phone']):
-        return jsonify(构建响应(400, None, "手机号格式不正确"))
-    if 'id_card' in 数据 and 数据['id_card'] and not _身份证正则.match(数据['id_card']):
-        return jsonify(构建响应(400, None, "身份证号格式不正确"))
+    # 更新时也校验敏感字段格式（仅非空时校验）
+    if 'phone' in 数据:
+        手机号 = 数据['phone']
+        if 手机号 and 手机号.strip() and not _手机号正则.match(手机号.strip()):
+            return jsonify(构建响应(400, None, "手机号格式不正确（需11位数字，1开头）"))
+    if 'id_card' in 数据:
+        身份证号 = 数据['id_card']
+        if 身份证号 and 身份证号.strip() and not _身份证正则.match(身份证号.strip()):
+            return jsonify(构建响应(400, None, "身份证号格式不正确（需18位）"))
 
     可更新字段 = ['add_date', 'name', 'id_card', 'phone', 'wechat', 'tags', 'status']
 

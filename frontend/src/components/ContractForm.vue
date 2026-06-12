@@ -94,12 +94,12 @@
       <el-row :gutter="20">
         <el-col :span="8">
           <el-form-item label="室">
-            <el-input :model-value="房源详情?.rooms || ''" disabled />
+            <el-input :model-value="房源详情?.room || ''" disabled />
           </el-form-item>
         </el-col>
         <el-col :span="8">
           <el-form-item label="厅">
-            <el-input :model-value="房源详情?.halls || ''" disabled />
+            <el-input :model-value="房源详情?.hall || ''" disabled />
           </el-form-item>
         </el-col>
         <el-col :span="8">
@@ -203,6 +203,7 @@ const 表单数据 = reactive({
   start_date: '',
   end_date: '',
   deposit: 0,
+  monthly_rent: 0,
   house_code: '',
   customer_code: ''
 })
@@ -243,6 +244,7 @@ function 初始化表单() {
       start_date: props.合同信息.start_date || '',
       end_date: props.合同信息.end_date || '',
       deposit: props.合同信息.deposit || 0,
+      monthly_rent: props.合同信息.monthly_rent || 0,
       house_code: props.合同信息.house_code || '',
       customer_code: props.合同信息.customer_code || ''
     })
@@ -263,6 +265,7 @@ function 重置表单() {
   表单数据.start_date = ''
   表单数据.end_date = ''
   表单数据.deposit = 0
+  表单数据.monthly_rent = 0
   表单数据.house_code = ''
   表单数据.customer_code = ''
   房源详情.value = null
@@ -273,7 +276,13 @@ async function 查询房源信息() {
   if (!表单数据.house_code) return
   try {
     const res = await 根据编号获取房源(表单数据.house_code)
-    房源详情.value = res
+    // 响应拦截器返回 {code, data, msg}，取 data 字段
+    const 实际数据 = res.data !== undefined ? res.data : res
+    房源详情.value = 实际数据
+    // 自动填入月租金
+    if (实际数据?.rent) {
+      表单数据.monthly_rent = 实际数据.rent
+    }
   } catch {
     ElMessage.warning('未找到该房源')
     房源详情.value = null
@@ -284,7 +293,9 @@ async function 查询客户信息() {
   if (!表单数据.customer_code) return
   try {
     const res = await 根据编号获取客户(表单数据.customer_code)
-    客户详情.value = res
+    // 响应拦截器返回 {code, data, msg}，取 data 字段
+    const 实际数据 = res.data !== undefined ? res.data : res
+    客户详情.value = 实际数据
   } catch {
     ElMessage.warning('未找到该客户')
     客户详情.value = null

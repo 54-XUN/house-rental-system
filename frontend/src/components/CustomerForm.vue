@@ -38,6 +38,19 @@
           <el-button type="primary" @click="打开标签选择弹窗">选</el-button>
         </div>
       </el-form-item>
+
+      <el-form-item label="状态">
+        <div style="display: flex; gap: 10px;">
+          <el-button
+            v-for="选项 in 状态选项"
+            :key="选项.value"
+            :type="表单数据.status === 选项.value ? 'primary' : 'default'"
+            @click="表单数据.status = 选项.value"
+          >
+            {{ 选项.label }}
+          </el-button>
+        </div>
+      </el-form-item>
     </el-form>
 
     <template #footer>
@@ -111,8 +124,15 @@ const 表单数据 = reactive({
   id_card: '',
   phone: '',
   wechat: '',
-  tags: ''
+  tags: '',
+  status: '跟进中'
 })
+
+const 状态选项 = [
+  { label: '已签单', value: '已签单' },
+  { label: '跟进中', value: '跟进中' },
+  { label: '已放弃', value: '已放弃' }
+]
 
 const 验证规则 = {
   name: [{ required: true, message: '请输入姓名', trigger: 'blur' }],
@@ -138,7 +158,8 @@ function 初始化表单() {
       id_card: props.客户信息.id_card || '',
       phone: props.客户信息.phone || '',
       wechat: props.客户信息.wechat || '',
-      tags: props.客户信息.tags || ''
+      tags: props.客户信息.tags || '',
+      status: props.客户信息.status || '跟进中'
     })
   } else {
     重置表单()
@@ -152,6 +173,7 @@ function 重置表单() {
   表单数据.phone = ''
   表单数据.wechat = ''
   表单数据.tags = ''
+  表单数据.status = '跟进中'
 }
 
 function 打开标签选择弹窗() {

@@ -7,32 +7,16 @@ from models import db
 from models.house import 房源模型
 from models.customer import 客户模型
 from models.contract import 合同模型
-from utils.helpers import 构建响应, 构建错误响应, 更新所有房源状态
+from utils.helpers import 构建响应, 构建错误响应
 from utils.api_decorator import api_handler
 
 dashboard_bp = Blueprint('dashboard', __name__)
-
-# 看板状态更新缓存（5分钟）
-_最后更新时间 = 0
-_缓存间隔 = 300
-
-
-def 需要更新状态() -> bool:
-    global _最后更新时间
-    当前时间 = time.time()
-    if 当前时间 - _最后更新时间 > _缓存间隔:
-        _最后更新时间 = 当前时间
-        return True
-    return False
 
 
 @dashboard_bp.route('/dashboard/summary', methods=['GET'])
 @api_handler("获取概览统计", 需要回滚=False)
 def 获取概览统计() -> Response:
     """获取总览统计：总房源数、本月成交金额、本月成交数、总客户数"""
-    if 需要更新状态():
-        更新所有房源状态()
-
     总房源数 = 房源模型.query.count()
 
     今天 = datetime.now()
@@ -62,9 +46,6 @@ def 获取概览统计() -> Response:
 @api_handler("获取金额趋势", 需要回滚=False)
 def 获取金额趋势() -> Response:
     """获取最近15天的成交金额趋势"""
-    if 需要更新状态():
-        更新所有房源状态()
-
     结束日期 = datetime.now()
     开始日期 = 结束日期 - timedelta(days=14)
 
@@ -89,9 +70,6 @@ def 获取金额趋势() -> Response:
 @api_handler("获取客户趋势", 需要回滚=False)
 def 获取客户趋势() -> Response:
     """获取最近7个月的新增客户趋势"""
-    if 需要更新状态():
-        更新所有房源状态()
-
     结束月份 = datetime.now().replace(day=1)
     趋势数据 = []
 
@@ -122,9 +100,6 @@ def 获取客户趋势() -> Response:
 @api_handler("获取房源状态分布", 需要回滚=False)
 def 获取房源状态分布() -> Response:
     """获取房源状态分布：空闲、已租、即将到期、出租率"""
-    if 需要更新状态():
-        更新所有房源状态()
-
     总房源数 = 房源模型.query.count()
 
     空闲数 = 房源模型.query.filter_by(status='空闲').count()
@@ -147,9 +122,6 @@ def 获取房源状态分布() -> Response:
 @api_handler("获取热门小区", 需要回滚=False)
 def 获取热门小区() -> Response:
     """获取房源数量前5的小区排名"""
-    if 需要更新状态():
-        更新所有房源状态()
-
     所有房源 = 房源模型.query.all()
     小区计数器 = Counter(房源.community for 房源 in 所有房源 if 房源.community)
 
@@ -165,9 +137,6 @@ def 获取热门小区() -> Response:
 @api_handler("获取最佳成交日", 需要回滚=False)
 def 获取最佳成交日() -> Response:
     """获取单日最高成交额的日期和金额"""
-    if 需要更新状态():
-        更新所有房源状态()
-
     最佳记录 = db.session.query(
         合同模型.sign_date,
         func.coalesce(func.sum(合同模型.total_amount), 0).label('总金额')
@@ -192,9 +161,6 @@ def 获取最佳成交日() -> Response:
 @api_handler("获取最佳新增客户月", 需要回滚=False)
 def 获取最佳新增客户月() -> Response:
     """获取单月最高新增客户数的月份和数量"""
-    if 需要更新状态():
-        更新所有房源状态()
-
     所有客户 = 客户模型.query.filter(客户模型.add_date.isnot(None)).all()
 
     if not 所有客户:

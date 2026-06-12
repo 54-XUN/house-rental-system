@@ -19,11 +19,13 @@
         <div class="range-input">
           <el-input
             v-model="表单数据.area_min"
+            type="text"
             placeholder="最小面积"
           />
           <span class="separator">-</span>
           <el-input
             v-model="表单数据.area_max"
+            type="text"
             placeholder="最大面积"
           />
         </div>
@@ -45,6 +47,7 @@
       <el-form-item label="室数">
         <el-input
           v-model="表单数据.room"
+          type="text"
           placeholder="精确匹配室数"
         />
       </el-form-item>
@@ -52,6 +55,7 @@
       <el-form-item label="厅数">
         <el-input
           v-model="表单数据.hall"
+          type="text"
           placeholder="精确匹配厅数"
         />
       </el-form-item>
@@ -67,8 +71,10 @@
 </template>
 
 <script setup>
-import { ref, watch, reactive } from 'vue'
+import { ref, watch, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
+
+const 存储键 = 'house_filter_params'
 
 const props = defineProps({
   visible: {
@@ -96,6 +102,9 @@ const 表单数据 = reactive({
 
 watch(() => props.visible, (val) => {
   dialogVisible.value = val
+  if (val) {
+    读取筛选条件()
+  }
 })
 
 watch(dialogVisible, (val) => {
@@ -137,6 +146,7 @@ function handleSubmit() {
   }
   
   emit('filter', params)
+  保存筛选条件()
   dialogVisible.value = false
 }
 
@@ -147,6 +157,36 @@ function handleReset() {
   表单数据.选中标签 = []
   表单数据.room = undefined
   表单数据.hall = undefined
+  localStorage.removeItem(存储键)
+}
+
+function 保存筛选条件() {
+  const 数据 = {
+    status: 表单数据.status,
+    area_min: 表单数据.area_min,
+    area_max: 表单数据.area_max,
+    选中标签: 表单数据.选中标签,
+    room: 表单数据.room,
+    hall: 表单数据.hall
+  }
+  localStorage.setItem(存储键, JSON.stringify(数据))
+}
+
+function 读取筛选条件() {
+  try {
+    const 原始数据 = localStorage.getItem(存储键)
+    if (原始数据) {
+      const 数据 = JSON.parse(原始数据)
+      表单数据.status = 数据.status || ''
+      表单数据.area_min = 数据.area_min || undefined
+      表单数据.area_max = 数据.area_max || undefined
+      表单数据.选中标签 = 数据.选中标签 || []
+      表单数据.room = 数据.room || undefined
+      表单数据.hall = 数据.hall || undefined
+    }
+  } catch (e) {
+    // 解析失败忽略，使用默认值
+  }
 }
 
 function handleClose() {
