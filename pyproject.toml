@@ -5,22 +5,18 @@ description = "zgxpython_temp py880.cn"
 readme = "README.md"
 requires-python = ">=3.12.10"
 dependencies = [
-    "arrow>=1.3.0",
     "flask>=3.1.3",
     "flask-cors>=6.0.2",
     "flask-sqlalchemy>=3.1.1",
-    "openpyxl>=3.1.5",
-    "psutil>=7.2.2",
-    "pyinstaller>=6.20.0",
     "pywebview>=6.2.1",
     "pywin32>=311",
-    "requests>=2.34.2",
     "screeninfo>=0.8.1",
 ]
 
 [dependency-groups]
 dev = [
     "mypy>=2.1.0",
+    "pyinstaller>=6.20.0",
     "pytest>=9.0.3",
     "pytest-flask>=1.3.0",
     "ruff>=0.15.14",
