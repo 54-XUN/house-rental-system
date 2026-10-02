@@ -13,12 +13,13 @@ from screeninfo import get_monitors
 
 
 def 获取项目根目录():
-    """获取项目根目录（打包模式用 _MEIPASS，开发模式用文件目录）"""
+    """获取项目根目录（打包模式用 _MEIPASS，开发模式用本文件所在目录）"""
     if getattr(sys, 'frozen', False):
         # PyInstaller 打包模式：从临时解压目录读取嵌入的资源文件
         return sys._MEIPASS
     else:
-        return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        # 开发模式：启动脚本.py 位于项目根目录
+        return os.path.dirname(os.path.abspath(__file__))
 
 
 def 写入启动错误日志(异常对象):
