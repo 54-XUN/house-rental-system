@@ -4,8 +4,8 @@
 import os
 import sys
 
-# 确保backend目录在路径中
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'backend'))
+# 确保backend目录在路径中（conftest.py 位于 backend/tests/，上一级即 backend/）
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # 测试前设置：使用内存数据库
 os.environ['TESTING'] = '1'
