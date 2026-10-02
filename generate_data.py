@@ -1,4 +1,6 @@
-import sys, os, random
+import sys
+import os
+import random
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'backend'))
 from app import 创建应用
 from models import db

@@ -101,7 +101,7 @@ def 验证结果():
     exe路径 = os.path.join(dist目录, '房屋出租管理系统.exe')
     if os.path.exists(exe路径):
         大小mb = os.path.getsize(exe路径) / (1024 * 1024)
-        print(f'  [OK] 打包成功！')
+        print('  [OK] 打包成功！')
         print(f'  文件位置: {exe路径}')
         print(f'  文件大小: {大小mb:.2f} MB')
         print()
