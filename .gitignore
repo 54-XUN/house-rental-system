@@ -10,6 +10,7 @@ ENV/
 env/
 .mypy_cache/
 .ruff_cache/
+.pytest_cache/
 
 # Database
 *.db
@@ -38,34 +39,6 @@ Thumbs.db
 *.temp
 *.bak
 *.swp
-
-# 旧项目模板文件（tkinter版，本项目用Flask+Vue3不需要）
-__py880/
-src/main.py
-src/py880测试.py
-src/打包exe  v1.2.py
-src/启动命令行.bat
-src/启动.vbs
-src/启动窗体.vbs
-test_backend.py
-test_dashboard_api.py
-validate_backend.py
-uv安装依赖.ps1
-uv安装包失败的点我.ps1
-初始化仓库命令.bat
-运行项目 V1.24.bat
-重新初始化 V1.24.bat
-uv_init.sh
-启用ps1脚本运行权限.bat
-新建项目流程.txt
-FINAL_TASK_SPEC.md
-PARALLEL_TASKS.md
-excel_analysis_report.txt
-report.txt
-
-# 临时测试脚本（不要提交）
-simple_import.py
-delete_test_data.py
 
 # Trae AI配置（仅在使用Trae时需要）
 .trae/
