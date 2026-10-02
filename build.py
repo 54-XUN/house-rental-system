@@ -1,4 +1,4 @@
-"""
+r"""
 房屋出租管理系统 - 一键打包脚本
 用法：.venv\Scripts\python.exe build.py
 """
