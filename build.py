@@ -45,15 +45,46 @@ def 检查必要文件():
     return 全部存在
 
 
+def 获取目录最新修改时间(目录路径) -> float:
+    """递归获取目录内所有文件的最新修改时间，目录不存在返回 0"""
+    最新时间 = 0.0
+    if not os.path.exists(目录路径):
+        return 最新时间
+    for 根目录, _, 文件列表 in os.walk(目录路径):
+        for 文件名 in 文件列表:
+            try:
+                最新时间 = max(最新时间, os.path.getmtime(os.path.join(根目录, 文件名)))
+            except OSError:
+                pass
+    return 最新时间
+
+
+def 前端源码有更新(dist修改时间) -> bool:
+    """检测前端源码/配置是否比 dist 构建产物新"""
+    源码目录 = os.path.join(前端目录, 'src')
+    最新源码时间 = max(
+        获取目录最新修改时间(源码目录),
+        获取目录最新修改时间(os.path.join(前端目录, 'public')),
+    )
+    # 根目录的构建配置文件也纳入对比
+    for 配置文件 in ('package.json', 'package-lock.json', 'vite.config.js'):
+        配置路径 = os.path.join(前端目录, 配置文件)
+        if os.path.exists(配置路径):
+            最新源码时间 = max(最新源码时间, os.path.getmtime(配置路径))
+    return 最新源码时间 > dist修改时间
+
+
 def 构建前端():
-    """若 frontend/dist 不存在则构建前端"""
+    """dist 不存在或源码比 dist 新时构建前端"""
     标题('检查前端构建产物')
     dist_index = os.path.join(前端目录, 'dist', 'index.html')
     if os.path.exists(dist_index):
-        print('  [OK] 前端已构建，跳过')
-        return True
-
-    print('  [...] 正在构建前端...')
+        if not 前端源码有更新(os.path.getmtime(dist_index)):
+            print('  [OK] 前端已是最新，跳过')
+            return True
+        print('  [...] 检测到前端源码有更新，重新构建...')
+    else:
+        print('  [...] 正在构建前端...')
     if not os.path.exists(os.path.join(前端目录, 'node_modules')):
         print('  [...] 正在安装前端依赖（首次较慢）...')
         结果 = subprocess.run(['npm', 'install'], cwd=前端目录)

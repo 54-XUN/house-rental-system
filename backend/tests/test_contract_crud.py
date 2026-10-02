@@ -190,6 +190,26 @@ class Test合同CRUD:
         assert 数据['code'] == 400
         assert '月租金' in 数据['msg']
 
+    def test_创建合同时客户不存在被拒绝(self, 客户端):
+        """POST创建合同要求客户编号真实存在"""
+        self._创建测试房源(客户端)
+        # 不创建客户，直接用不存在的编号签约
+        响应 = 客户端.post('/api/contracts', json={
+            'house_code': 'FY00001',
+            'customer_code': 'F99999',
+            'months': 12,
+            'start_date': '2025-01-01',
+            'end_date': '2026-01-01',
+            'monthly_rent': 3000
+        })
+        数据 = 响应.get_json()
+        assert 数据['code'] == 404
+        assert '客户不存在' in 数据['msg']
+
+        # 房源不应被占用
+        房源 = 客户端.get('/api/houses/by_code/FY00001').get_json()['data']
+        assert 房源['status'] == '空闲'
+
     def test_变更合同客户时状态同步(self, 客户端):
         """PUT换绑客户：新客户变已签单，原客户无剩余合同时回退跟进中"""
         self._创建测试房源(客户端)

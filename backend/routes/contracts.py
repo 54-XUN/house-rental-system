@@ -82,6 +82,11 @@ def 创建合同() -> Response:
     if not 关联房源:
         return jsonify(构建响应(404, None, "房源不存在"))
 
+    # 检查客户是否存在（防止合同挂在不存在的客户编号上）
+    关联客户 = 客户模型.query.filter_by(customer_code=数据['customer_code']).first()
+    if not 关联客户:
+        return jsonify(构建响应(404, None, "客户不存在"))
+
     # 检查房源是否已出租（包括已租和即将到期）
     if 关联房源.status in ['已租', '即将到期']:
         return jsonify(构建响应(400, None, f"该房源已{关联房源.status}，无法重复签约"))
@@ -129,13 +134,11 @@ def 创建合同() -> Response:
     关联房源.expire_date = 数据['end_date']
     关联房源.status = '已租'
 
-    db.session.commit()
-
-    # 同步更新关联客户状态为"已签单"
-    关联客户 = 客户模型.query.filter_by(customer_code=数据['customer_code']).first()
+    # 同步客户状态（与主数据一次提交，避免中间崩溃造成不一致）
     if 关联客户:
         关联客户.status = '已签单'
-        db.session.commit()
+
+    db.session.commit()
 
     return jsonify(构建响应(200, 新合同.to_dict(), "创建成功"))
 
