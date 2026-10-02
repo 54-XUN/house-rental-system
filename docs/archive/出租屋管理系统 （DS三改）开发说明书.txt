@@ -1,0 +1,194 @@
+# 房屋出租管理系统 — 开发规格说明书（最终修订版）
+
+## 一、项目概述
+- 单机桌面应用，双击 .exe 运行，无需浏览器和 Python 环境。
+- 技术栈：PyWebView + Flask (后端) + Vue 3 + Element Plus (前端) + SQLite。
+- 单人使用，无登录。
+
+## 二、数据库设计 (SQLite)
+
+### 2.1 房源表 houses
+字段：id(INT PK), house_code(TEXT UNIQUE), add_date(TEXT), community(TEXT), address(TEXT), floor(INT), room(INT), hall(INT), area(REAL), rent(REAL), tags(TEXT), contract_code(TEXT), expire_date(TEXT), status(TEXT)
+说明：tags 用逗号分隔；status 为 空闲/已租/即将到期，根据 expire_date 和当前日期自动计算。
+
+### 2.2 客户表 customers
+字段：id(INT PK), customer_code(TEXT UNIQUE), add_date(TEXT), name(TEXT), id_card(TEXT), phone(TEXT), wechat(TEXT), tags(TEXT), status(TEXT)
+说明：tags 与房源 tags 共用同一套选项；status 为 跟进中/已签单/已放弃。
+
+### 2.3 合同表 contracts
+字段：id(INT PK), contract_code(TEXT UNIQUE), sign_date(TEXT), house_code(TEXT), customer_code(TEXT), months(INT), start_date(TEXT), end_date(TEXT), deposit(REAL, 可为空), monthly_rent(REAL), total_amount(REAL)
+业务逻辑：total_amount = months * monthly_rent + deposit (deposit 空则 0)；创建合同时自动更新房源表 contract_code、expire_date、status 为“已租”；删除合同时清空房源表对应字段并改状态为“空闲”。
+
+### 2.4 参数设置表 settings (key-value)
+默认键值：
+- card_columns = "7"
+- vacant_style = "WPS"
+- rented_style = "WPS"
+- expiring_style = "WPS"
+- expiring_days = "30"
+- communities = '["小区名称A","小区名称B","小区名称C","小区名称D","小区名称E","小区名称F","小区名称G","小区名称H"]'
+- house_tags = '["楼层低","有电梯","近地铁","有家具","有空调","有车位","精装修","民水民电","随时看房"]'
+
+## 三、后端 API 接口
+
+### 房源
+GET /api/houses?status=&area_min=&area_max=&tags=&room=&hall=
+  返回数组，每条包含房源表所有字段；筛选逻辑：status 精确匹配；area_min/area_max 数值范围；tags 任意一个匹配；room/hall 精确匹配。
+POST /api/houses   body 含所有字段（除 id）
+PUT /api/houses/<id>
+DELETE /api/houses/<id>
+
+### 客户
+GET /api/customers?status=   status 可选 跟进中/已签单/已放弃，返回数组。
+POST /api/customers
+PUT /api/customers/<id>
+DELETE /api/customers/<id>
+
+### 合同
+GET /api/contracts   无筛选，返回数组。
+POST /api/contracts   body: sign_date, contract_code, house_code, customer_code, months, start_date, end_date, deposit。自动计算 total_amount，自动更新房源状态。
+DELETE /api/contracts/<id>  对应房源状态改回空闲。
+辅助接口：
+GET /api/houses/by_code/<house_code>   返回房源详情
+GET /api/customers/by_code/<customer_code>  返回客户详情
+
+### 数据看板
+GET /api/dashboard/summary -> { total_houses, month_amount, month_count, total_customers }
+GET /api/dashboard/amount_trend -> [{ date, amount }] 最近15天
+GET /api/dashboard/customer_trend -> [{ month, count }] 最近7个月
+GET /api/dashboard/house_status -> { vacant, expiring, rented, rate }
+GET /api/dashboard/top_communities -> [{ community, count }] top5
+GET /api/dashboard/best_day -> { date, amount }
+GET /api/dashboard/best_month_customers -> { month, count }
+
+### 参数设置
+GET /api/settings  返回所有 key-value
+PUT /api/settings   body 包含要修改的 key-value
+POST /api/settings/reset   清空房源、客户、合同表，恢复 settings 默认值
+
+### 示例数据管理
+POST /api/import-example   清空三张表，从打包的 Excel 文件导入示例数据（处理冲突和转换，详见第六章）。返回成功/失败。
+POST /api/delete-test-data  清空三张表，保留 settings。返回成功/失败。
+
+## 四、前端界面与交互
+
+### 4.1 整体布局
+- 左侧菜单：房源管理、客户管理、交易流水、统计看板、参数设置
+- 右侧内容区
+
+### 4.2 房源管理页面
+
+**视图**：卡片视图（默认）和表格视图可切换。
+
+**卡片视图特性**：
+- 按小区名称分组显示。每个分组标题为该小区名称，下方为该小区的房源卡片网格。
+- 分组标题右侧有“+”/“-”图标可单独展开/收起该分组。
+- 页面顶部提供三个独立按钮：
+  - **“全部折叠”**：收起所有分组，只显示小区名称（可带“+”号），按钮文字变为 **“全部展开”**。
+  - **“全部展开”**：展开所有分组，显示每个小区下的所有房源卡片，按钮文字变为 **“全部折叠”**。
+  - **“全部房源”**：触发异步加载过程（即使数据已在本地，也显示快速进度条以满足设计）。
+    - 显示进度指示器，格式：“当前进度：X --- Y”，进度条百分比显示。
+    - X 从 0 递增到总房源数 Y（可模拟，总时间<0.5秒），弹出弹窗“加载完成”。
+    - 关闭后自动切换为“全部展开”状态。
+
+**高级筛选**：模态框支持状态、面积范围、标签（多选）、室、厅。确认后刷新列表。
+
+**添加/编辑房源**：表单含所有字段，小区名称和标签选项来自 settings。
+
+**表格视图**：显示房源表所有列，操作列包含 **“查看”**（详情）和 **“开单”**（跳转到添加交易页面并自动填入房源编号）两个按钮。
+
+**删除**：需二次确认。
+
+### 4.3 客户管理页面
+- 表格视图，显示所有字段。
+- 顶部状态筛选按钮：全部、跟进中、已签单、已放弃。
+- 添加/编辑/删除类似房源。
+
+### 4.4 交易流水页面
+- 表格显示所有合同字段，无筛选。
+- 每行有“查看”按钮，点击跳转到“添加交易”页面并填充数据（可编辑保存）。
+- “添加交易”按钮打开页面/模态框，包含合同信息、房源信息、客户信息三部分。房源编号/客户编号失焦自动带出详情。
+
+### 4.5 统计看板页面
+- 顶部四个指标卡片。
+- 成交金额趋势折线图（15天）。
+- 新增客户趋势柱状图（7个月）。
+- 房源分布饼图及出租率。
+- 小区排名表格（top5）。
+- 最高成交日文本、最高新增客户月文本。
+
+### 4.6 参数设置页面
+
+页面分为上下两个白框（样式相同）：
+
+**上半部分白框**（原有）：
+- 列表卡片设置：卡片列数（数字输入），空闲/已租/即将到期样式（下拉或颜色选择器，WPS 映射为推荐色值：空闲 #f0f9eb，已租 #f5f5f5，即将到期 #fff3e0）。
+- 字段设置：小区名称列表（可增删改）、房源标签列表（可增删改）。
+- 底部按钮：**“模板初始化”**（清空三张表 + 恢复 settings 默认值）。
+
+**下半部分白框**（新增，位于上方白框下方）：
+- 内部放置两个**并列**的按钮（样式与“模板初始化”相同）：
+  1. **“导入示例数据”**：调用 POST /api/import-example，成功后弹出提示“示例数据导入成功（系统已根据合同自动更新房源状态，与 Excel 静态显示可能不同）”。
+  2. **“删除测试数据”**：调用 POST /api/delete-test-data，成功后提示“测试数据已删除”。
+
+## 五、业务规则补充
+- 编号自动递增规则：
+  - 房源：FY + 5位数字，起始 FY00001。
+  - 客户：F + 5位数字，起始 F00001。
+  - 合同：FYH + 4位数字，起始 FYH0001。
+- 每日或每次启动时，检查已租房源的到期日：若 expire_date <= 当前日期 + expiring_days，status 设为“即将到期”，否则为“已租”。
+- 客户标签与房源标签共用 house_tags 列表。
+
+## 六、示例数据导入格式转换与冲突处理（重要）
+
+### 6.1 数据源
+- Excel 文件：`房屋出租管理系统.xlsx`（打包到 exe 同目录或嵌入）。
+- 以 **“房源明细”** 工作表为房源主数据，“客户管理”为客户主数据，“交易流水”为合同主数据。
+
+### 6.2 格式转换
+- **日期列**：使用 `openpyxl` 或 `xlrd` 读取，直接获取 datetime 对象，格式化为 `YYYY-MM-DD` 字符串。
+- **面积**：去除“m²”后缀（如有），转为浮点数。
+- **标签**（房源和客户）：将竖线“|”分隔符替换为逗号。
+- **合同押金**：空值写入 NULL。
+- **合同金额**：重新计算 = months * monthly_rent + deposit（若 deposit 空则 0）。
+
+### 6.3 房源编号唯一性冲突处理
+- 由于 Excel 中房源编号 `FY00001` 大量重复，导入时必须保证 `houses.house_code` 唯一。
+- **算法**：
+  1. 扫描“房源明细”工作表，按行顺序读取。对于每个房源记录，若其 `house_code` 未出现过，则保留原编号；若已出现过，则生成新的唯一编号（格式 `FYxxxxx`，取当前最大编号 +1 递增）。
+  2. 建立映射字典：`{旧编号: 新编号}`。
+  3. 导入房源表时使用新编号。
+  4. 导入合同表时，根据映射字典将 `house_code` 替换为新编号。
+- 注意：房源明细表中的多行数据（即便原编号相同）均视为独立房源，每行生成唯一编号。
+
+### 6.4 数据不一致优先级
+- 当“房源列表”工作表与“房源明细”工作表对同一房源的信息不一致时，以 **“房源明细”** 为准。
+- “房源明细”中同一编号的多行数据，视为不同房源（按上述冲突处理各自生成新编号）。
+
+### 6.5 导入后状态
+- 导入完成后，根据合同表中的关联，自动更新房源的 `contract_code`、`expire_date`、`status` 为“已租”或“即将到期”（依据到期日与当前日期比较）。
+- 弹出提示：“示例数据导入成功（系统已根据合同自动更新房源状态，与 Excel 静态显示可能不同）”。
+
+## 七、交付要求
+- 打包为单个 Windows exe 文件，双击运行。
+- SQLite 数据库文件保存在 exe 所在目录或用户数据目录。
+- 所有静态文件（HTML/CSS/JS）内嵌或一起打包。
+- 附带 `房屋出租管理系统.xlsx` 文件（示例数据）。
+
+## 八、实现优先级
+1. 基础框架、SQLite 表结构、CRUD API。
+2. 房源管理完整功能（卡片视图、全部折叠/展开/全部房源+进度条、高级筛选、表格视图含“开单”按钮、增删改查）。
+3. 客户管理、合同管理。
+4. 看板统计。
+5. 参数设置（含导入/删除测试数据按钮，导入时实现冲突处理和格式转换）。
+6. 打包测试。
+
+## 九、实现提示（供参考，非强制）
+- **看板状态计算**：在 `/api/dashboard/summary` 中，根据房源表的 expire_date 和当前日期结合 settings 中的 expiring_days 动态计算 vacant/rented/expiring 数量。
+- **前端分组**：使用 `Array.reduce()` 按 community 字段对房源数组分组，再用 `v-for` 渲染分组和卡片。
+- **动态样式**：根据 settings 中的 `vacant_style` 等值，为不同状态的卡片绑定不同的 CSS 类，推荐色值：空闲 #f0f9eb，已租 #f5f5f5，即将到期 #fff3e0。
+- **身份证处理**：本规格书不要求加密存储，前端显示可做简单脱敏（如 `230211********3215`）以提升观感，存储仍为明文。
+- **操作日志**：本规格书不要求记录操作日志，如有需要可后续扩展。
+
+## 十、AI 实现指令
+请严格按照上述所有章节的要求生成完整的项目代码。对于未明确之处，请优先遵循 Excel 原版行为。实现提示部分仅作为参考，不强制要求。如有疑问请先提问。

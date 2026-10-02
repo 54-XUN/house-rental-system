@@ -1,0 +1,154 @@
+# 房屋出租管理系统 — 开发规格说明书
+
+## 一、项目概述
+- 单机桌面应用，双击 .exe 运行，无需浏览器和 Python 环境。
+- 技术栈：PyWebView + Flask (后端) + Vue 3 + Element Plus (前端) + SQLite。
+- 单人使用，无登录。
+
+## 二、数据库设计 (SQLite)
+
+### 2.1 房源表 houses
+字段：id(INT PK), house_code(TEXT UNIQUE), add_date(TEXT), community(TEXT), address(TEXT), floor(INT), room(INT), hall(INT), area(REAL), rent(REAL), tags(TEXT), contract_code(TEXT), expire_date(TEXT), status(TEXT)
+说明：tags 用逗号分隔；status 为 空闲/已租/即将到期，根据 expire_date 和当前日期自动计算。
+
+### 2.2 客户表 customers
+字段：id(INT PK), customer_code(TEXT UNIQUE), add_date(TEXT), name(TEXT), id_card(TEXT), phone(TEXT), wechat(TEXT), tags(TEXT), status(TEXT)
+说明：tags 与房源 tags 共用同一套选项；status 为 跟进中/已签单/已放弃。
+
+### 2.3 合同表 contracts
+字段：id(INT PK), contract_code(TEXT UNIQUE), sign_date(TEXT), house_code(TEXT), customer_code(TEXT), months(INT), start_date(TEXT), end_date(TEXT), deposit(REAL, 可为空), monthly_rent(REAL), total_amount(REAL)
+业务逻辑：total_amount = months * monthly_rent + deposit (deposit 空则 0)；创建合同时自动更新房源表 contract_code、expire_date、status 为“已租”；删除合同时清空房源表对应字段并改状态为“空闲”。
+
+### 2.4 参数设置表 settings (key-value)
+默认键值：
+- card_columns = "7"
+- vacant_style = "WPS"
+- rented_style = "WPS"
+- expiring_style = "WPS"
+- expiring_days = "30"
+- communities = '["小区名称A","小区名称B","小区名称C","小区名称D","小区名称E","小区名称F","小区名称G","小区名称H"]'
+- house_tags = '["楼层低","有电梯","近地铁","有家具","有空调","有车位","精装修","民水民电","随时看房"]'
+
+## 三、后端 API 接口
+
+### 房源
+GET /api/houses?status=&area_min=&area_max=&tags=&room=&hall=
+  返回数组，每条包含房源表所有字段；筛选逻辑：status 精确匹配；area_min/area_max 数值范围；tags 任意一个匹配；room/hall 精确匹配。
+POST /api/houses   body 含所有字段（除 id）
+PUT /api/houses/<id>
+DELETE /api/houses/<id>
+
+### 客户
+GET /api/customers?status=   status 可选 跟进中/已签单/已放弃，返回数组。
+POST /api/customers
+PUT /api/customers/<id>
+DELETE /api/customers/<id>
+
+### 合同
+GET /api/contracts   无筛选，返回数组。
+POST /api/contracts   body: sign_date, contract_code, house_code, customer_code, months, start_date, end_date, deposit。自动计算 total_amount，自动更新房源状态。
+DELETE /api/contracts/<id>  对应房源状态改回空闲。
+辅助接口：
+GET /api/houses/by_code/<house_code>   返回房源详情
+GET /api/customers/by_code/<customer_code>  返回客户详情
+
+### 数据看板
+GET /api/dashboard/summary -> { total_houses, month_amount, month_count, total_customers }
+GET /api/dashboard/amount_trend -> [{ date, amount }] 最近15天
+GET /api/dashboard/customer_trend -> [{ month, count }] 最近7个月
+GET /api/dashboard/house_status -> { vacant, expiring, rented, rate }
+GET /api/dashboard/top_communities -> [{ community, count }] top5
+GET /api/dashboard/best_day -> { date, amount }
+GET /api/dashboard/best_month_customers -> { month, count }
+
+### 参数设置
+GET /api/settings  返回所有 key-value
+PUT /api/settings   body 包含要修改的 key-value
+POST /api/settings/reset   清空房源、客户、合同表，恢复 settings 默认值
+
+## 四、前端界面与交互
+
+### 4.1 整体布局
+- 左侧菜单：房源管理、客户管理、交易流水、统计看板、参数设置
+- 右侧内容区
+
+### 4.2 房源管理页面
+
+**视图**：卡片视图（默认）和表格视图可切换。
+
+**卡片视图特性**：
+- 按小区名称分组显示。每个分组标题为该小区名称，下方为该小区的房源卡片网格。
+- 分组标题右侧有“+”/“-”图标（或独立按钮）可单独展开/收起该分组。
+- 页面顶部提供两个独立按钮：
+  - **“全部折叠”**：收起所有分组，只显示小区名称（可带“+”号），按钮文字变为 **“全部展开”**。
+  - **“全部展开”**：展开所有分组，显示每个小区下的所有房源卡片，按钮文字变为 **“全部折叠”**。
+  - **“全部房源”**（第三个独立按钮）：触发异步加载过程。
+    - 点击后显示进度指示器（模态框或内嵌组件），格式为：
+        “当前进度：X --- Y”
+        进度条可视化（百分比填充），同时显示百分比（如 46%）。
+        其中 X 为已加载/已处理的房源数量，Y 为总房源数量。
+    - 进度条递增直到 X == Y，然后弹出弹窗“加载完成”。
+    - 弹窗关闭后，自动将页面切换为 **“全部展开”** 状态（所有分组展开显示房源卡片），并关闭进度指示器。
+    - 注意：此按钮独立于“全部折叠/全部展开”切换，无论当前处于折叠还是展开状态，点击后均执行上述进度过程，并最终变为全部展开。
+
+**高级筛选**：
+- 点击“高级筛选”按钮弹出模态框，可筛选：
+  - 房源状态（空闲/即将到期/已租）
+  - 面积范围（min, max）
+  - 标签（多选，来源于 house_tags）
+  - 室（精确）、厅（精确）
+- 确认后重新调用 GET /api/houses 并刷新列表。
+
+**添加/编辑房源**：
+- 表单字段：房源编号（可自动生成）、小区名称（下拉，来自 communities）、详细地址、楼层、室、厅、面积、租金、添加日期（日期选择器）、房源标签（多选框，来自 house_tags）。
+- 支持保存、重置。
+
+**删除**：需二次确认。
+
+### 4.3 客户管理页面
+- 表格视图，显示所有字段。
+- 顶部有状态筛选按钮：全部、跟进中、已签单、已放弃。
+- 添加/编辑/删除操作类似房源。
+
+### 4.4 交易流水页面
+- 表格显示所有合同字段，无筛选。
+- 每行有“查看”按钮，点击跳转到“添加交易”页面并填充数据（支持修改保存）。
+- “添加交易”按钮打开新页面（或模态框），包含三部分：
+  - 合同信息：合同编号（自动）、租住月数、起始日期、结束日期、押金金额、合同金额（自动计算）。
+  - 房源信息：房源编号输入框（失焦自动带出小区、地址、楼层、室厅、面积、租金、标签）。
+  - 客户信息：客户编号输入框（失焦自动带出姓名、身份证、电话）。
+- 保存后创建合同，更新房源状态。
+
+### 4.5 统计看板页面
+- 顶部四个指标卡片。
+- 成交金额趋势折线图（15天）。
+- 新增客户趋势柱状图（7个月）。
+- 房源分布饼图/圆环（空闲/即将到期/已租）及出租率。
+- 小区排名表格（top5）。
+- 最高成交日文本、最高新增客户月文本。
+
+### 4.6 参数设置页面
+- 列表卡片设置：卡片列数（数字输入），空闲/已租/即将到期样式（下拉或颜色选择器，默认 WPS 映射为预设颜色）。
+- 字段设置：小区名称列表（可增删改）、房源标签列表（可增删改）。
+- 模板初始化按钮：点击后弹出警告确认框，确认后调用 POST /api/settings/reset，清空数据并恢复默认参数。
+
+## 五、业务规则补充
+- 房源编号、客户编号、合同编号自动递增规则：
+  - 房源：FY + 5位数字，起始 FY00001。
+  - 客户：F + 5位数字，起始 F00001。
+  - 合同：FYH + 4位数字，起始 FYH0001。
+- 每日或每次启动应用时，检查所有已租房源的到期日，若 expire_date <= 当前日期 + expiring_days，则 status 设为“即将到期”，否则为“已租”。
+- 客户标签与房源标签共用 house_tags 列表。
+
+## 六、交付要求
+- 打包为单个 Windows exe 文件，双击运行。
+- SQLite 数据库文件保存在 exe 所在目录或用户数据目录。
+- 所有静态文件（HTML/CSS/JS）内嵌或一起打包。
+
+## 七、实现优先级
+- 优先完成房源管理完整功能（含全部折叠/展开、全部房源+进度条、高级筛选、卡片视图+表格视图）。
+- 其次客户管理、合同管理。
+- 最后看板、参数设置。
+
+## 八、AI 实现指令
+请严格按照该规格说明书生成完整的项目代码，如有疑问请先提问。

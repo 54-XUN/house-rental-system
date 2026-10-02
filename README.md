@@ -60,7 +60,7 @@ cd ..
 backend/          Flask 后端（API + 数据模型，含 generate_data.py 测试数据生成）
 frontend/         Vue3 前端源码
 build/            打包脚本（build.py；build.spec 与图标不随仓库分发）
-docs/             开发规范.md（需求规格）、开发文档.md（维护手册）
+docs/             开发规范.md（需求规格）、开发文档.md（维护手册）、Excel 原型、archive/ 历史文档
 启动脚本.py        开发/打包通用入口
 ```
 
