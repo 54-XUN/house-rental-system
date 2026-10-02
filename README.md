@@ -33,12 +33,11 @@
 ## 项目结构
 
 ```
-backend/          Flask 后端（API + 数据模型）
+backend/          Flask 后端（API + 数据模型，含 generate_data.py 测试数据生成）
 frontend/         Vue3 前端源码
 docs/             开发规范
 build.py          一键打包脚本（构建前端 + PyInstaller 打包）
 build.spec        PyInstaller 配置
 启动脚本.py        开发/打包通用入口
-generate_data.py  生成测试数据
 icon.ico          应用图标
 ```
