@@ -128,47 +128,6 @@ wheels = [
 ]
 
 [[package]]
-name = "code880-temp-v5-11"
-version = "0.1.0"
-source = { virtual = "." }
-dependencies = [
-    { name = "flask" },
-    { name = "flask-cors" },
-    { name = "flask-sqlalchemy" },
-    { name = "pywebview" },
-    { name = "pywin32" },
-    { name = "screeninfo" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "mypy" },
-    { name = "pyinstaller" },
-    { name = "pytest" },
-    { name = "pytest-flask" },
-    { name = "ruff" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "flask", specifier = ">=3.1.3" },
-    { name = "flask-cors", specifier = ">=6.0.2" },
-    { name = "flask-sqlalchemy", specifier = ">=3.1.1" },
-    { name = "pywebview", specifier = ">=6.2.1" },
-    { name = "pywin32", specifier = ">=311" },
-    { name = "screeninfo", specifier = ">=0.8.1" },
-]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "mypy", specifier = ">=2.1.0" },
-    { name = "pyinstaller", specifier = ">=6.20.0" },
-    { name = "pytest", specifier = ">=9.0.3" },
-    { name = "pytest-flask", specifier = ">=1.3.0" },
-    { name = "ruff", specifier = ">=0.15.14" },
-]
-
-[[package]]
 name = "colorama"
 version = "0.4.6"
 source = { registry = "https://mirrors.aliyun.com/pypi/simple/" }
@@ -298,6 +257,47 @@ wheels = [
     { url = "https://mirrors.aliyun.com/pypi/packages/93/c5/3dc9475ace2c7a3680da12372cddd7f1ac874eb410a1ac48d3e9dab83782/greenlet-3.5.1-cp315-cp315t-musllinux_1_2_x86_64.whl", hash = "sha256:17d86354f0ae6b61bf9be5148d0dd34e06c3cb7c602c671f79f29ac3b150e659" },
     { url = "https://mirrors.aliyun.com/pypi/packages/df/4e/750c15c317a41ffb36f0bf40b933e3d744a7dede61889f74443ea69690cf/greenlet-3.5.1-cp315-cp315t-win_amd64.whl", hash = "sha256:e7516cf6ae6b8a582c2770a0caed47b8a48373ed732c33d69a72913ae6ac923e" },
     { url = "https://mirrors.aliyun.com/pypi/packages/4f/fd/d3baea2eeb7b617efd47e87ca06e2ec2c6118d303aa9e918e0ce16eadc10/greenlet-3.5.1-cp315-cp315t-win_arm64.whl", hash = "sha256:5028648bf2253ec4745add746129d3904121fa7fe871a76bed23c5720573ce0a" },
+]
+
+[[package]]
+name = "house-rental-system"
+version = "1.0.0"
+source = { virtual = "." }
+dependencies = [
+    { name = "flask" },
+    { name = "flask-cors" },
+    { name = "flask-sqlalchemy" },
+    { name = "pywebview" },
+    { name = "pywin32" },
+    { name = "screeninfo" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "mypy" },
+    { name = "pyinstaller" },
+    { name = "pytest" },
+    { name = "pytest-flask" },
+    { name = "ruff" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "flask", specifier = ">=3.1.3" },
+    { name = "flask-cors", specifier = ">=6.0.2" },
+    { name = "flask-sqlalchemy", specifier = ">=3.1.1" },
+    { name = "pywebview", specifier = ">=6.2.1" },
+    { name = "pywin32", specifier = ">=311" },
+    { name = "screeninfo", specifier = ">=0.8.1" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "mypy", specifier = ">=2.1.0" },
+    { name = "pyinstaller", specifier = ">=6.20.0" },
+    { name = "pytest", specifier = ">=9.0.3" },
+    { name = "pytest-flask", specifier = ">=1.3.0" },
+    { name = "ruff", specifier = ">=0.15.14" },
 ]
 
 [[package]]
