@@ -3,7 +3,7 @@ import re
 from models import db
 from models.customer import 客户模型
 from utils.id_generator import 生成客户编号
-from utils.helpers import 构建响应, 构建错误响应
+from utils.helpers import 构建响应
 from utils.api_decorator import api_handler
 
 customers_bp = Blueprint('customers', __name__)

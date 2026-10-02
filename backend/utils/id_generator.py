@@ -1,4 +1,3 @@
-import re
 import threading
 from sqlalchemy import func
 from models import db

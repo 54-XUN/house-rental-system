@@ -1,4 +1,3 @@
-import time
 from flask import Blueprint, jsonify, Response
 from datetime import datetime, timedelta
 from collections import Counter
@@ -7,7 +6,7 @@ from models import db
 from models.house import 房源模型
 from models.customer import 客户模型
 from models.contract import 合同模型
-from utils.helpers import 构建响应, 构建错误响应
+from utils.helpers import 构建响应
 from utils.api_decorator import api_handler
 
 dashboard_bp = Blueprint('dashboard', __name__)

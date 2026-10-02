@@ -4,7 +4,7 @@ from models.setting import 设置模型, 获取默认设置
 from models.house import 房源模型
 from models.customer import 客户模型
 from models.contract import 合同模型
-from utils.helpers import 构建响应, 构建错误响应
+from utils.helpers import 构建响应
 from utils.api_decorator import api_handler
 
 settings_bp = Blueprint('settings', __name__)

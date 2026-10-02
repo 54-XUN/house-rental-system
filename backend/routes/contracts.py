@@ -5,7 +5,7 @@ from models.contract import 合同模型
 from models.house import 房源模型
 from models.customer import 客户模型
 from utils.id_generator import 生成合同编号
-from utils.helpers import 构建响应, 构建错误响应, 计算房源状态
+from utils.helpers import 构建响应, 计算房源状态
 from utils.api_decorator import api_handler
 
 contracts_bp = Blueprint('contracts', __name__)

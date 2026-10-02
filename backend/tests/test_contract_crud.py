@@ -7,7 +7,6 @@ P0核心测试：合同CRUD + 房源联动状态
 - 已签约房源无法重复签约
 - 不存在的房源无法签合同
 """
-import json
 
 
 class Test合同CRUD:

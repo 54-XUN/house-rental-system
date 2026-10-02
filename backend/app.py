@@ -104,7 +104,8 @@ def 初始化默认设置():
 
 
 if __name__ == '__main__':
-    import sys, os
+    import sys
+    import os
 
     # PyInstaller 打包后无窗口模式下标准输出不可用，需要重定向
     if getattr(sys, 'frozen', False):

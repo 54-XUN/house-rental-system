@@ -9,10 +9,10 @@
 """
 import logging
 from functools import wraps
-from flask import jsonify, Response
+from flask import jsonify
 from werkzeug.exceptions import HTTPException
 from models import db
-from utils.helpers import 构建响应, 构建错误响应
+from utils.helpers import 构建错误响应
 
 logger = logging.getLogger(__name__)
 

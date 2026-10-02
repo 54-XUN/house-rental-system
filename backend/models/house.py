@@ -1,5 +1,4 @@
 from models import db
-from datetime import datetime
 
 
 class 房源模型(db.Model):
