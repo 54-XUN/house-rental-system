@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify, Response
 import re
+from datetime import datetime
 from models import db
 from models.contract import 合同模型
 from models.house import 房源模型
@@ -9,6 +10,18 @@ from utils.helpers import 构建响应, 计算房源状态
 from utils.api_decorator import api_handler
 
 contracts_bp = Blueprint('contracts', __name__)
+
+
+def 校验日期先后(开始日期值, 结束日期值) -> str | None:
+    """校验开始/结束日期格式与先后顺序，返回错误消息，合法返回 None"""
+    try:
+        开始日 = datetime.strptime(str(开始日期值), '%Y-%m-%d')
+        结束日 = datetime.strptime(str(结束日期值), '%Y-%m-%d')
+    except (ValueError, TypeError):
+        return "日期格式必须为 YYYY-MM-DD"
+    if 结束日 <= 开始日:
+        return "结束日期必须晚于开始日期"
+    return None
 
 
 @contracts_bp.route('/contracts', methods=['GET'])
@@ -73,11 +86,27 @@ def 创建合同() -> Response:
     if 关联房源.status in ['已租', '即将到期']:
         return jsonify(构建响应(400, None, f"该房源已{关联房源.status}，无法重复签约"))
 
-    # 计算合同金额
-    月数 = int(数据['months'])
-    月租 = float(数据['monthly_rent'])
-    押金原始值 = 数据.get('deposit')
-    押金 = float(押金原始值) if 押金原始值 is not None else 0
+    # 数值字段校验（前端传字符串，统一转换）
+    try:
+        月数 = int(数据['months'])
+        月租 = float(数据['monthly_rent'])
+        押金原始值 = 数据.get('deposit')
+        押金 = float(押金原始值) if 押金原始值 is not None else 0
+    except (ValueError, TypeError):
+        return jsonify(构建响应(400, None, "月数/月租/押金必须为有效数值"))
+
+    if 月数 <= 0:
+        return jsonify(构建响应(400, None, "租期月数必须大于0"))
+    if 月租 <= 0:
+        return jsonify(构建响应(400, None, "月租金必须大于0"))
+    if 押金 < 0:
+        return jsonify(构建响应(400, None, "押金不能为负数"))
+
+    # 日期格式与先后顺序校验
+    日期错误 = 校验日期先后(数据['start_date'], 数据['end_date'])
+    if 日期错误:
+        return jsonify(构建响应(400, None, 日期错误))
+
     总金额 = 月数 * 月租 + 押金
 
     新合同 = 合同模型(
@@ -121,6 +150,30 @@ def 更新合同(contract_id: int) -> Response:
     if not 数据:
         return jsonify(构建响应(400, None, "请求数据为空"))
 
+    # 数值字段合法性校验
+    for 数值字段, 下限 in (('months', 1), ('monthly_rent', 0.01), ('deposit', 0)):
+        if 数值字段 in 数据 and 数据[数值字段] is not None:
+            try:
+                if float(数据[数值字段]) < 下限:
+                    return jsonify(构建响应(400, None, f"{'租期月数' if 数值字段 == 'months' else ('月租金' if 数值字段 == 'monthly_rent' else '押金')}不能小于{下限}"))
+            except (ValueError, TypeError):
+                return jsonify(构建响应(400, None, f"{数值字段}必须为数值"))
+
+    # 日期格式与先后顺序校验（未传的字段用现有值补齐）
+    开始日期值 = 数据.get('start_date') or 合同.start_date
+    结束日期值 = 数据.get('end_date') or 合同.end_date
+    if 开始日期值 and 结束日期值:
+        日期错误 = 校验日期先后(开始日期值, 结束日期值)
+        if 日期错误:
+            return jsonify(构建响应(400, None, 日期错误))
+
+    # 客户变更校验：新客户必须存在
+    新客户编号 = 数据.get('customer_code')
+    原客户编号 = 合同.customer_code
+    if 新客户编号 and 新客户编号 != 原客户编号:
+        if not 客户模型.query.filter_by(customer_code=新客户编号).first():
+            return jsonify(构建响应(404, None, "新客户不存在"))
+
     可更新字段 = ['sign_date', 'months', 'start_date', 'end_date',
                    'deposit', 'monthly_rent', 'customer_code']
 
@@ -134,6 +187,20 @@ def 更新合同(contract_id: int) -> Response:
         月租 = 合同.monthly_rent or 0
         押金 = 合同.deposit or 0
         合同.total_amount = 月数 * 月租 + 押金
+
+    # 同步新旧客户的签单状态
+    if 新客户编号 and 新客户编号 != 原客户编号:
+        新客户 = 客户模型.query.filter_by(customer_code=新客户编号).first()
+        if 新客户:
+            新客户.status = '已签单'
+        if 原客户编号:
+            原客户 = 客户模型.query.filter_by(customer_code=原客户编号).first()
+            剩余合同数 = 合同模型.query.filter(
+                合同模型.customer_code == 原客户编号,
+                合同模型.id != 合同.id
+            ).count()
+            if 原客户 and 剩余合同数 == 0:
+                原客户.status = '跟进中'
 
     # 如果结束日期变更，同步更新房源到期日和状态
     if 'end_date' in 数据 and 合同.house_code:

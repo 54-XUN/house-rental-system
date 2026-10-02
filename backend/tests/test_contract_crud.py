@@ -156,6 +156,82 @@ class Test合同CRUD:
         数据 = 响应.get_json()['data']
         assert 数据['total_amount'] == 12 * 2500 + 2500  # 32500
 
+    def test_结束日期早于开始日期被拒绝(self, 客户端):
+        """创建合同时结束日期必须晚于开始日期"""
+        self._创建测试房源(客户端)
+        self._创建测试客户(客户端)
+
+        响应 = 客户端.post('/api/contracts', json={
+            'house_code': 'FY00001',
+            'customer_code': 'F00001',
+            'months': 12,
+            'start_date': '2026-01-01',
+            'end_date': '2025-01-01',
+            'monthly_rent': 3000
+        })
+        数据 = 响应.get_json()
+        assert 数据['code'] == 400
+        assert '结束日期' in 数据['msg']
+
+    def test_负数月租被拒绝(self, 客户端):
+        """创建合同时月租金必须大于0"""
+        self._创建测试房源(客户端)
+        self._创建测试客户(客户端)
+
+        响应 = 客户端.post('/api/contracts', json={
+            'house_code': 'FY00001',
+            'customer_code': 'F00001',
+            'months': 12,
+            'start_date': '2025-01-01',
+            'end_date': '2026-01-01',
+            'monthly_rent': -3000
+        })
+        数据 = 响应.get_json()
+        assert 数据['code'] == 400
+        assert '月租金' in 数据['msg']
+
+    def test_变更合同客户时状态同步(self, 客户端):
+        """PUT换绑客户：新客户变已签单，原客户无剩余合同时回退跟进中"""
+        self._创建测试房源(客户端)
+        self._创建测试客户(客户端, customer_code='F00001')
+        self._创建测试客户(客户端, customer_code='F00002')
+
+        客户端.post('/api/contracts', json={
+            'house_code': 'FY00001',
+            'customer_code': 'F00001',
+            'months': 12,
+            'start_date': '2025-01-01',
+            'end_date': '2026-01-01',
+            'monthly_rent': 3000
+        })
+
+        # 换绑到 F00002
+        响应 = 客户端.put('/api/contracts/1', json={'customer_code': 'F00002'})
+        assert 响应.get_json()['code'] == 200
+
+        原客户 = 客户端.get('/api/customers/by_code/F00001').get_json()['data']
+        新客户 = 客户端.get('/api/customers/by_code/F00002').get_json()['data']
+        assert 原客户['status'] == '跟进中'
+        assert 新客户['status'] == '已签单'
+
+    def test_换绑到不存在的客户被拒绝(self, 客户端):
+        """PUT换绑客户时新客户必须存在"""
+        self._创建测试房源(客户端)
+        self._创建测试客户(客户端)
+
+        客户端.post('/api/contracts', json={
+            'house_code': 'FY00001',
+            'customer_code': 'F00001',
+            'months': 12,
+            'start_date': '2025-01-01',
+            'end_date': '2026-01-01',
+            'monthly_rent': 3000
+        })
+
+        响应 = 客户端.put('/api/contracts/1', json={'customer_code': 'F99999'})
+        数据 = 响应.get_json()
+        assert 数据['code'] == 404
+
 
 class Test房源CRUD:
     """基础房源CRUD测试"""

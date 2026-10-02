@@ -68,19 +68,31 @@ def 获取金额趋势() -> Response:
 @dashboard_bp.route('/dashboard/customer_trend', methods=['GET'])
 @api_handler("获取客户趋势", 需要回滚=False)
 def 获取客户趋势() -> Response:
-    """获取最近7个月的新增客户趋势"""
-    结束月份 = datetime.now().replace(day=1)
+    """获取最近7个月的新增客户趋势（按日历月计算，避免30天近似的月边界偏移）"""
+    今天 = datetime.now()
+    当月标签 = 今天.strftime('%Y-%m')
+
+    # 计算最近7个月的日历月份
+    月份列表 = []
+    当前年, 当前月 = 今天.year, 今天.month
+    for 位移 in range(6, -1, -1):
+        目标月 = 当前月 - 位移
+        目标年 = 当前年
+        while 目标月 <= 0:
+            目标月 += 12
+            目标年 -= 1
+        月份列表.append(f'{目标年:04d}-{目标月:02d}')
+
     趋势数据 = []
-
-    for i in range(6, -1, -1):
-        目标月份 = (结束月份 - timedelta(days=30*i)).strftime('%Y-%m')
-
-        月初 = f'{目标月份}-01'
-        if i == 0:
-            月末 = datetime.now().strftime('%Y-%m-%d')
+    for 月份 in 月份列表:
+        月初 = f'{月份}-01'
+        if 月份 == 当月标签:
+            # 当月统计到今天为止
+            月末 = 今天.strftime('%Y-%m-%d')
         else:
-            下一月 = (结束月份 - timedelta(days=30*(i-1))).replace(day=1)
-            月末 = (下一月 - timedelta(days=1)).strftime('%Y-%m-%d')
+            次年 = int(月份[:4]) + (1 if 月份[5:7] == '12' else 0)
+            次月 = 1 if 月份[5:7] == '12' else int(月份[5:7]) + 1
+            月末 = (datetime(次年, 次月, 1) - timedelta(days=1)).strftime('%Y-%m-%d')
 
         当月客户数 = 客户模型.query.filter(
             客户模型.add_date >= 月初,
@@ -88,7 +100,7 @@ def 获取客户趋势() -> Response:
         ).count()
 
         趋势数据.append({
-            'month': 目标月份,
+            'month': 月份,
             'count': 当月客户数
         })
 
