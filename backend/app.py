@@ -1,6 +1,14 @@
+import os
+import sys
+
+# 兼容 PyInstaller --onefile 打包模式：把自身目录加入 sys.path
+# 解决 from models import db / from utils.xxx import yyy 类相对导入找不到的问题
+_pkg_root = os.path.dirname(os.path.abspath(__file__))
+if _pkg_root not in sys.path:
+    sys.path.insert(0, _pkg_root)
+
 from flask import Flask, send_from_directory, jsonify, request
 from flask_cors import CORS
-import os
 import secrets
 from config import SQLALCHEMY_DATABASE_URI, SQLALCHEMY_TRACK_MODIFICATIONS
 from models import db

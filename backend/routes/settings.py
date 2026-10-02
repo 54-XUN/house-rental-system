@@ -83,29 +83,3 @@ def 重置系统() -> Response:
     db.session.commit()
 
     return jsonify(构建响应(200, None, "系统已重置"))
-
-
-@settings_bp.route('/import-example', methods=['POST'])
-@api_handler("导入示例数据", 需要回滚=True)
-def 导入示例数据接口() -> Response:
-    """导入示例数据接口"""
-    from utils.excel_import import 导入示例数据
-    成功, 消息 = 导入示例数据()
-
-    if 成功:
-        return jsonify(构建响应(200, None, 消息))
-    else:
-        return jsonify(构建响应(500, None, 消息))
-
-
-@settings_bp.route('/delete-test-data', methods=['POST'])
-@api_handler("删除测试数据", 需要回滚=True)
-def 删除测试数据接口() -> Response:
-    """删除测试数据接口"""
-    from utils.excel_import import 删除测试数据
-    成功, 消息 = 删除测试数据()
-
-    if 成功:
-        return jsonify(构建响应(200, None, 消息))
-    else:
-        return jsonify(构建响应(500, None, 消息))

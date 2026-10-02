@@ -16,7 +16,6 @@ dependencies = [
     "pywin32>=311",
     "requests>=2.34.2",
     "screeninfo>=0.8.1",
-    "ttkbootstrap>=1.12",
 ]
 
 [dependency-groups]

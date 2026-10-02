@@ -23,7 +23,6 @@ frontend/dist/
 package/
 build/
 dist/
-*.spec
 
 # IDE
 .vscode/
@@ -51,8 +50,6 @@ src/启动窗体.vbs
 test_backend.py
 test_dashboard_api.py
 validate_backend.py
-打包脚本.py
-启动脚本.py
 uv安装依赖.ps1
 uv安装包失败的点我.ps1
 初始化仓库命令.bat
