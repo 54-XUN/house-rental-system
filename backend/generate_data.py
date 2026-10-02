@@ -1,7 +1,7 @@
 import sys
 import os
 import random
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'backend'))
+sys.path.insert(0, os.path.dirname(__file__))
 from app import 创建应用
 from models import db
 from models.house import 房源模型
