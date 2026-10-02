@@ -1,6 +1,6 @@
 r"""
 房屋出租管理系统 - 一键打包脚本
-用法：.venv\Scripts\python.exe build.py
+用法：.venv\Scripts\python.exe build\build.py
 """
 import os
 import shutil
@@ -12,10 +12,11 @@ if hasattr(sys.stdout, 'reconfigure'):
     sys.stdout.reconfigure(encoding='utf-8', errors='replace')
     sys.stderr.reconfigure(encoding='utf-8', errors='replace')
 
-项目根 = os.path.dirname(os.path.abspath(__file__))
+脚本目录 = os.path.dirname(os.path.abspath(__file__))
+项目根 = os.path.dirname(脚本目录)
 前端目录 = os.path.join(项目根, 'frontend')
-dist目录 = os.path.join(项目根, 'package', 'dist')
-build目录 = os.path.join(项目根, 'package', 'build')
+dist目录 = os.path.join(脚本目录, 'dist')
+build目录 = os.path.join(脚本目录, 'work')
 
 
 def 标题(文本):
@@ -25,18 +26,18 @@ def 标题(文本):
 
 
 def 检查必要文件():
-    """检查打包所需文件"""
+    """检查打包所需文件（入口在项目根，其余在本目录）"""
     标题('检查必要文件')
     必要文件 = [
-        ('启动脚本.py', '主入口'),
-        ('backend/app.py', 'Flask 后端'),
-        ('backend/config.py', '后端配置'),
-        ('icon.ico', '应用图标'),
-        ('build.spec', '打包配置'),
+        ('启动脚本.py', '主入口', 项目根),
+        ('backend/app.py', 'Flask 后端', 项目根),
+        ('backend/config.py', '后端配置', 项目根),
+        ('icon.ico', '应用图标', 脚本目录),
+        ('build.spec', '打包配置', 脚本目录),
     ]
     全部存在 = True
-    for 文件, 说明 in 必要文件:
-        完整路径 = os.path.join(项目根, 文件)
+    for 文件, 说明, 基准目录 in 必要文件:
+        完整路径 = os.path.join(基准目录, 文件)
         if os.path.exists(完整路径):
             print(f'  [OK] {说明}: {文件}')
         else:
@@ -116,7 +117,7 @@ def 执行打包():
     结果 = subprocess.run(
         [
             sys.executable, '-m', 'PyInstaller',
-            'build.spec',
+            os.path.join(脚本目录, 'build.spec'),
             '--noconfirm', '--clean',
             f'--distpath={dist目录}',
             f'--workpath={build目录}',

@@ -1,10 +1,11 @@
 # -*- mode: python ; coding: utf-8 -*-
 """房屋出租管理系统 - PyInstaller 打包配置"""
 import os
-项目根 = os.path.abspath(SPECPATH)
+脚本目录 = os.path.abspath(SPECPATH)
+项目根 = os.path.dirname(脚本目录)
 
 a = Analysis(
-    ['启动脚本.py'],
+    [os.path.join(项目根, '启动脚本.py')],
     pathex=[项目根],
     binaries=[],
     datas=[
@@ -52,6 +53,6 @@ exe = EXE(
     upx=True,
     runtime_tmpdir=None,
     console=False,                # 无黑窗口
-    icon=os.path.join(项目根, 'icon.ico'),
+    icon=os.path.join(脚本目录, 'icon.ico'),
     disable_windowed_traceback=False,
 )

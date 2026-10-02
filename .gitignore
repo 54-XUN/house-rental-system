@@ -40,9 +40,8 @@ Thumbs.db
 *.bak
 *.swp
 
-# Trae AI配置：rules等本地配置忽略，docs例外进git
-.trae/*
-!.trae/docs/
+# Trae AI配置（仅在使用Trae时需要）
+.trae/
 
 # 原始Excel数据文件（可选，用于导入示例数据）
 房屋出租管理系统.xlsx
