@@ -42,6 +42,8 @@ cd ..
 
 ### 方式二：打包为 EXE
 
+仓库内提供一键打包脚本（`build/build.py`），它会自动完成前端构建与 PyInstaller 打包。完整的打包配置（`build.spec`）与应用图标未随仓库分发，需自行准备后放入 `build/` 目录：
+
 ```powershell
 .venv\Scripts\python.exe build\build.py
 ```
@@ -57,7 +59,7 @@ cd ..
 ## 项目结构
 
 ```
-backend/          Flask 后端（API + 数据模型，含 generate_data.py 测试数据生成）
+backend/          Fl脚本k 后端（API ；，含 generate与据生不随仓库分发
 frontend/         Vue3 前端源码
 build/            打包工具（build.py 一键打包、build.spec 配置、icon.ico 图标、dist/ 产物）
 docs/             开发规范.md（需求规格）、开发文档.md（维护手册）
