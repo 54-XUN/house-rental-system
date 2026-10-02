@@ -52,10 +52,22 @@
 
       <el-row :gutter="20">
         <el-col :span="12">
+          <el-form-item label="月租金" prop="monthly_rent">
+            <el-input
+              v-model="表单数据.monthly_rent"
+              placeholder="输入房源编号后自动带入，可修改"
+              style="width: 100%"
+            />
+          </el-form-item>
+        </el-col>
+        <el-col :span="12">
           <el-form-item label="押金金额">
             <el-input v-model="表单数据.deposit" style="width: 100%" />
           </el-form-item>
         </el-col>
+      </el-row>
+
+      <el-row :gutter="20">
         <el-col :span="12">
           <el-form-item label="合同金额">
             <el-input :model-value="'¥' + 合同金额" disabled />
@@ -217,6 +229,16 @@ const 合同金额 = computed(() => {
 
 const 验证规则 = {
   months: [{ required: true, message: '请输入租住月数', trigger: 'blur' }],
+  monthly_rent: [{
+    validator: (rule, value, callback) => {
+      if (!value || Number(value) <= 0) {
+        callback(new Error('请输入有效的月租金（输入房源编号后自动带入）'))
+      } else {
+        callback()
+      }
+    },
+    trigger: 'blur'
+  }],
   start_date: [{ required: true, message: '请选择起始日期', trigger: 'change' }],
   end_date: [{ required: true, message: '请选择结束日期', trigger: 'change' }],
   house_code: [{ required: true, message: '请输入房源编号', trigger: 'blur' }],
@@ -310,6 +332,10 @@ function 脱敏身份证(id_card) {
 async function handleSubmit() {
   if (!formRef.value) return
   try {
+    // 兜底：月租金为空但房源信息已带出时，用房源租金补上
+    if ((!表单数据.monthly_rent || Number(表单数据.monthly_rent) <= 0) && 房源详情.value?.rent) {
+      表单数据.monthly_rent = 房源详情.value.rent
+    }
     await formRef.value.validate()
     const 提交数据 = { ...表单数据 }
     emit('submit', 提交数据)
